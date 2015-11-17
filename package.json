@@ -1,0 +1,12 @@
+{
+  "name"         : "node-filemanager",
+  "version"      : "0.0.0",
+  "description"  : "Simple todo application.",
+  "main"         : "server.js",
+  "author"       : "Scotch",
+  "dependencies" : {
+    "express"  		  		: "~4.7.2",
+    "angular-file-upload" 	: "~2.1.4",
+	"body-parser"			: "~1.14.1"
+    }
+}

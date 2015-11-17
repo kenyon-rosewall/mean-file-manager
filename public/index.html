@@ -1,0 +1,161 @@
+<!doctype html>
+
+<html ng-app="fileServer">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	
+	<title>Wellington File Server</title>
+	
+	<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
+	
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script><!-- load jquery -->
+	<script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.0.8/angular.min.js"></script><!-- load angular -->
+	<script src="//nervgh.github.io/pages/angular-file-upload/dist/angular-file-upload.min.js"></script>
+    <script src="core.js"></script>
+</head>
+<body ng-controller="mainController">
+	<div class="container">
+		<div class="jumbotron text-center">
+			<h1>Wellington Files</h1>
+		</div>
+		
+		<div id="auth" ng-hide="auth" class="col-sm-4 col-sm-offset-4">
+			<form name="signinForm" class="form-signin">
+				<h2 class="form-signin-heading">Please sign in</h2>
+				<label for="user" class="sr-only">User</label>
+				<input type="text" name="user" ng-model="loginForm.user" class="form-control" placeholder="User" required autofocus>
+				<label for="password" class="sr-only">Password</label>
+				<input type="password" name="password" ng-model="loginForm.password" class="form-control" placeholder="Password" required>
+				<button ng-disabled="signinForm.user.$dirty && signinForm.user.$invalid || signinForm.password.$dirty && signinForm.password.$invalid" class="btn btn-lg btn-primary btn-block" ng-click="login()">Sign in</button>
+			</form>
+		</div>
+		
+		<div id="filemanager" ng-show="auth">
+			<label><span ng-bind-html-unsafe="path_info"></span> <span class="label label-info">{{ files.length - 1 }}</span></label>
+			<div class="pull-right">
+				<span class="label label-default" style="font-size:large;">{{ audio_name }}</span>
+				<audio controls ng-show="audio_show">
+					<source src="" type="audio/mpeg">
+				</audio>
+			</div>
+			<hr />
+			<div id="file-list" class="row">
+				<div class="col-sm-8">
+					<div ng-repeat="file in files">
+						<a ng-click="click(file.name + '/', file.type)" style="cursor:pointer;">
+							<span class="glyphicon glyphicon-folder-close" ng-show="file.type == 'folder'"></span>
+							<span class="glyphicon glyphicon-music" ng-show="file.type == 'audio'"></span> 
+							{{ file.name }}
+						</a>
+					</div>
+				</div>
+			</div>
+			<hr />
+			<button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#addFolder">Add Folder</button>
+			<button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#addFiles">Add Files</button>
+			<button type="button" class="btn btn-warning btn-lg pull-right" ng-click="logout()">Logout</button>
+			
+			<div id="addFolder" class="modal fade" addFolder role="dialog">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<h4 class="modal-title">Add Folder</h4>
+						</div>
+						<div class="modal-body">
+							<form name="myForm" role="form" novalidate>
+								<div class="form-group">
+									<label for="folder">Folder:</label>
+									<input type="text" class="form-control" ng-model="folder" name="folder" required>
+									<span style="color:red" ng-show="myForm.folder.$dirty && myForm.folder.$invalid">
+										<span ng-show="myForm.folder.$error.required">Folder name is required.</span>
+									</span>
+								</div>
+								<button ng-disabled="myForm.folder.$dirty && myForm.folder.$invalid" ng-click="submit_folder()" class="btn btn-default" data-dismiss="modal">Submit</button>
+							</form>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			<div id="addFiles" class="modal fade" role="dialog">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<h4 class="modal-title">Add Files</h4>
+						</div>
+						<div class="modal-body">
+							<input type="file" nv-file-select uploader="uploader" multiple><br/>
+							<table class="table">
+								<thead>
+									<tr>
+										<th width="50%">Name</th>
+										<th ng-show="uploader.isHTML5">Size</th>
+										<th ng-show="uploader.isHTML5">Progress</th>
+										<th>Status</th>
+										<th>Actions</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr ng-repeat="item in uploader.queue">
+										<td><strong>{{ item.file.name }}</strong></td>
+										<td ng-show="uploader.isHTML5" nowrap>{{ item.file.size/1024/1024|number:2 }} MB</td>
+										<td ng-show="uploader.isHTML5">
+											<div class="progress" style="margin-bottom: 0;">
+												<div class="progress-bar" role="progressbar" ng-style="{ 'width': item.progress + '%' }"></div>
+											</div>
+										</td>
+										<td class="text-center">
+											<span ng-show="item.isSuccess"><i class="glyphicon glyphicon-ok"></i></span>
+											<span ng-show="item.isCancel"><i class="glyphicon glyphicon-ban-circle"></i></span>
+											<span ng-show="item.isError"><i class="glyphicon glyphicon-remove"></i></span>
+										</td>
+										<td nowrap>
+											<button type="button" class="btn btn-success btn-xs" ng-click="item.upload()" ng-disabled="item.isReady || item.isUploading || item.isSuccess">
+												<span class="glyphicon glyphicon-upload"></span> Upload
+											</button>
+											<button type="button" class="btn btn-warning btn-xs" ng-click="item.cancel()" ng-disabled="!item.isUploading">
+												<span class="glyphicon glyphicon-ban-circle"></span> Cancel
+											</button>
+											<button type="button" class="btn btn-danger btn-xs" ng-click="item.remove()">
+												<span class="glyphicon glyphicon-trash"></span> Remove
+											</button>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+							<div>
+								<div>
+									Queue progress:
+									<div class="progress" style="">
+										<div class="progress-bar" role="progressbar" ng-style="{ 'width': uploader.progress + '%' }"></div>
+									</div>
+								</div>
+								<button type="button" class="btn btn-success btn-s" ng-click="uploader.uploadAll()" ng-disabled="!uploader.getNotUploadedItems().length">
+									<span class="glyphicon glyphicon-upload"></span> Upload all
+								</button>
+								<button type="button" class="btn btn-warning btn-s" ng-click="uploader.cancelAll()" ng-disabled="!uploader.isUploading">
+									<span class="glyphicon glyphicon-ban-circle"></span> Cancel all
+								</button>
+								<button type="button" class="btn btn-danger btn-s" ng-click="uploader.clearQueue()" ng-disabled="!uploader.queue.length">
+									<span class="glyphicon glyphicon-trash"></span> Remove all
+								</button>
+							</div>
+
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			
+		</div>
+	</div>
+</body>
+</html>
